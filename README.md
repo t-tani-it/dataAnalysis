@@ -16,19 +16,40 @@ eVTOL試作機の**仮想飛行試験データ**を使い、Pythonでデータ�
 - Python 3.11
 - プロジェクト内 `.venv`（他プロジェクトの conda 環境は使いません）
 
-## セットアップ
+## 入手（GitHub から）
 
 ```text
-python -m venv .venv
-.venv\Scripts\pip install -r requirements.txt
-.venv\Scripts\python -m src.data.generate
-.venv\Scripts\streamlit run app.py
+git clone https://github.com/t-tani-it/dataAnalysis.git
+cd dataAnalysis
 ```
 
-テスト:
+## セットアップ（初回のみ）
 
 ```text
+cd dataAnalysis
+python -m venv .venv
+.venv\Scripts\activate
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python -m src.data.generate
+```
+
+## 実行（セットアップ済みの場合）
+
+```text
+cd dataAnalysis
+.venv\Scripts\activate
+streamlit run app.py
+```
+
+- ブラウザで `http://localhost:8501` が開きます（開かない場合は URL を手動で開いてください）
+- 終了は `Ctrl + C`
+
+## テスト / データ再生成
+
+```text
+cd dataAnalysis
 .venv\Scripts\python -m pytest
+.venv\Scripts\python -m src.data.generate
 ```
 
 ## データ生成条件
