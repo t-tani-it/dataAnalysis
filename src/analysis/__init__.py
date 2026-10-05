@@ -10,7 +10,6 @@ from src.analysis import (
     step07,
     step08,
     step09,
-    step10,
 )
 
 __all__ = [
@@ -23,5 +22,4 @@ __all__ = [
     "step07",
     "step08",
     "step09",
-    "step10",
 ]

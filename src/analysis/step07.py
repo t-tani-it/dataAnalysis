@@ -7,6 +7,7 @@ Caution: 条件分けの切り方で見え方が変わる。
 Future Work: なし。
 Change Log:
 - 2026-08-30: 初版
+- 2026-10-05: 条件別コード例と有効測定件数を実行結果に整合
 """
 
 from __future__ import annotations
@@ -14,17 +15,44 @@ from __future__ import annotations
 from typing import Any
 
 import matplotlib.pyplot as plt
-import pandas as pd
 import seaborn as sns
 
 from src.analysis.common import load_raw, prepare_for_analysis
 from src.config import HIGH_SPEED_CRUISE_KMH
 
-CODE_SAMPLE = '''import pandas as pd
+CODE_SAMPLE = '''import seaborn as sns
+import matplotlib.pyplot as plt
 
-df = pd.read_csv("data/flight_tests_before.csv")
-df["high_speed"] = df["speed_kmh"] >= 180
-print(df.groupby(["flight_phase", "high_speed"])["motor_3_temp_c"].mean())
+from src.analysis.common import load_raw, prepare_for_analysis
+from src.config import HIGH_SPEED_CRUISE_KMH
+
+df = prepare_for_analysis(load_raw("before")).copy()
+df["high_speed"] = df["speed_kmh"] >= HIGH_SPEED_CRUISE_KMH
+by_condition = (
+    df.groupby(["flight_phase", "high_speed"], as_index=False)
+    .agg(
+        motor_3_mean=("motor_3_temp_c", "mean"),
+        motor_3_max=("motor_3_temp_c", "max"),
+        motor_1_mean=("motor_1_temp_c", "mean"),
+        motor_3_valid_n=("motor_3_temp_c", "count"),
+    )
+    .sort_values(["flight_phase", "high_speed"])
+)
+by_condition["temp_gap"] = by_condition["motor_3_mean"] - by_condition["motor_1_mean"]
+print("by_condition")
+print(by_condition)
+
+fig, ax = plt.subplots(figsize=(8, 4))
+sns.boxplot(
+    data=df,
+    x="flight_phase",
+    y="motor_3_temp_c",
+    hue="high_speed",
+    ax=ax,
+)
+ax.set_title("フェーズ・速度帯別の Motor 3 温度")
+fig.tight_layout()
+plt.show()
 '''
 
 
@@ -52,7 +80,7 @@ def execute_logic() -> dict[str, Any]:
             motor_3_mean=("motor_3_temp_c", "mean"),
             motor_3_max=("motor_3_temp_c", "max"),
             motor_1_mean=("motor_1_temp_c", "mean"),
-            n=("motor_3_temp_c", "size"),
+            motor_3_valid_n=("motor_3_temp_c", "count"),
         )
         .sort_values(["flight_phase", "high_speed"])
     )

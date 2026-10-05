@@ -7,6 +7,7 @@ Caution: 高い相関は「一緒に動く」ことであり、原因とは限�
 Future Work: なし。
 Change Log:
 - 2026-08-30: 初版
+- 2026-10-05: 表示コードを相関表・ヒートマップ・散布図と整合
 """
 
 from __future__ import annotations
@@ -14,18 +15,46 @@ from __future__ import annotations
 from typing import Any
 
 import matplotlib.pyplot as plt
-import pandas as pd
 import seaborn as sns
 
 from src.analysis.common import load_raw, prepare_for_analysis
 
-CODE_SAMPLE = '''import pandas as pd
-import seaborn as sns
+CODE_SAMPLE = '''import seaborn as sns
+import matplotlib.pyplot as plt
 
-df = pd.read_csv("data/flight_tests_before.csv")
-cols = ["speed_kmh", "battery_current_a", "motor_3_temp_c", "vibration_g"]
-print(df[cols].corr())
-sns.heatmap(df[cols].corr(), annot=True)
+from src.analysis.common import load_raw, prepare_for_analysis
+
+df = prepare_for_analysis(load_raw("before"))
+cols = [
+    "speed_kmh",
+    "battery_current_a",
+    "motor_3_temp_c",
+    "motor_1_temp_c",
+    "vibration_g",
+]
+corr_values = df[cols].corr()
+corr = corr_values.reset_index().rename(columns={"index": "column"})
+print("corr")
+print(corr)
+
+fig_heat, ax_heat = plt.subplots(figsize=(6, 5))
+sns.heatmap(corr_values, annot=True, fmt=".2f", cmap="coolwarm", ax=ax_heat)
+ax_heat.set_title("相関行列（Pearson）")
+fig_heat.tight_layout()
+
+sample = df.sample(n=min(800, len(df)), random_state=42)
+fig_sc, ax_sc = plt.subplots(figsize=(6, 4))
+sns.scatterplot(
+    data=sample,
+    x="speed_kmh",
+    y="motor_3_temp_c",
+    hue="flight_phase",
+    ax=ax_sc,
+    s=12,
+)
+ax_sc.set_title("速度と Motor 3 温度（標本）")
+fig_sc.tight_layout()
+plt.show()
 '''
 
 

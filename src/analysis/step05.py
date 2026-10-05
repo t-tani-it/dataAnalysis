@@ -7,6 +7,7 @@ Caution: 1試験だけでなく複数試験を重ねて見る。
 Future Work: なし。
 Change Log:
 - 2026-08-30: 初版
+- 2026-10-05: 表示コードの移動平均条件とフェーズ集計を整合
 """
 
 from __future__ import annotations
@@ -14,21 +15,35 @@ from __future__ import annotations
 from typing import Any
 
 import matplotlib.pyplot as plt
-import pandas as pd
 
 from src.analysis.common import load_raw, prepare_for_analysis
 from src.config import MOTOR_TEMP_COLS
 
-CODE_SAMPLE = '''import pandas as pd
-import matplotlib.pyplot as plt
+CODE_SAMPLE = '''import matplotlib.pyplot as plt
 
-df = pd.read_csv("data/flight_tests_before.csv")
-df["timestamp"] = pd.to_datetime(df["timestamp"])
-one = df[df["test_id"] == df["test_id"].iloc[0]].sort_values("timestamp")
-one["m3_ma"] = one["motor_3_temp_c"].rolling(20).mean()
-plt.plot(one["timestamp"], one["motor_3_temp_c"], label="Motor 3")
-plt.plot(one["timestamp"], one["m3_ma"], label="MA20")
-plt.legend()
+from src.analysis.common import load_raw, prepare_for_analysis
+from src.config import MOTOR_TEMP_COLS
+
+df = prepare_for_analysis(load_raw("before"))
+first_id = str(df["test_id"].iloc[0])
+one = df[df["test_id"] == first_id].sort_values("timestamp").copy()
+one["motor_3_ma20"] = one["motor_3_temp_c"].rolling(20, min_periods=1).mean()
+phase_mean = (
+    df.groupby("flight_phase", as_index=False)[list(MOTOR_TEMP_COLS)]
+    .mean()
+    .sort_values("flight_phase")
+)
+print("phase_mean")
+print(phase_mean)
+
+fig, ax = plt.subplots(figsize=(9, 4))
+ax.plot(one["timestamp"], one["motor_3_temp_c"], alpha=0.45, label="Motor 3")
+ax.plot(one["timestamp"], one["motor_1_temp_c"], alpha=0.45, label="Motor 1")
+ax.plot(one["timestamp"], one["motor_3_ma20"], label="Motor 3 移動平均20")
+ax.set_title(f"温度の時系列（{first_id}）")
+ax.set_ylabel("温度 [C]")
+ax.legend()
+fig.tight_layout()
 plt.show()
 '''
 

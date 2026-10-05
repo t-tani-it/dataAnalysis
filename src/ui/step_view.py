@@ -1,12 +1,13 @@
 """
 Why: 各STEPの画面を共通レイアウトで描画する。
-What: 課題→考える→ヒント→分析実行→結果→解説→実務、の順で表示する。
+What: STEP 1〜9は課題→ヒント→固定分析→結果を表示し、STEP 10は見本とチェックリストを表示する。
 Assumption / Dependencies: streamlit, 各 step モジュール, src.ui.content。
 I/O: STEP番号 → 画面描画。
 Caution: 学習者コードの eval はしない。
 Future Work: なし。
 Change Log:
 - 2026-08-30: 初版
+- 2026-10-05: 表示コードと分析結果の対応を明示し、STEP 10を見本・チェックリスト表示に限定
 """
 
 from __future__ import annotations
@@ -27,7 +28,6 @@ from src.analysis import (
     step07,
     step08,
     step09,
-    step10,
 )
 from src.ui.content import STEPS
 
@@ -41,7 +41,6 @@ STEP_MODULES = {
     7: step07,
     8: step08,
     9: step09,
-    10: step10,
 }
 
 
@@ -102,7 +101,6 @@ def execute_logic(step_no: int) -> None:
     """
     validate_input(step_no)
     content = STEPS[step_no]
-    module = STEP_MODULES[step_no]
 
     st.header(str(content["title"]))
     st.caption("数値は学習用の仮想値です。実在企業の試験データではありません。")
@@ -120,9 +118,23 @@ def execute_logic(step_no: int) -> None:
         with st.expander(f"Hint {i}", expanded=False):
             st.write(hint)
 
+    if step_no == 10:
+        st.subheader("報告見本（12項目）")
+        for i, line in enumerate(content["report_sample"], start=1):
+            st.markdown(f"{i}. {line}")
+        st.subheader("チェックリスト")
+        for item in content["checklist"]:
+            st.markdown(f"- {item}")
+        return
+
+    module = STEP_MODULES[step_no]
     st.subheader("4. 分析")
+    st.caption(
+        "表示コードと同等の固定分析処理を実行します。"
+        "表示コード自体や学習者が入力したコードは実行しません。"
+    )
     st.code(module.CODE_SAMPLE, language="python")
-    run = st.button("この分析を実行する", key=f"run_{step_no}")
+    run = st.button("表示コードに対応する分析を実行する", key=f"run_{step_no}")
 
     st.subheader("5. 結果")
     if run:
@@ -142,7 +154,7 @@ def execute_logic(step_no: int) -> None:
         if "figures" in result:
             _show_result_value(result["figures"])
     else:
-        st.info("コードを読んだあと、実行ボタンを押すと表とグラフが出ます。")
+        st.info("コードを読んだあと、実行ボタンを押すと分析結果が表示されます。")
 
     st.subheader("6. 解説")
     st.write(str(content["explain"]))
@@ -155,15 +167,6 @@ def execute_logic(step_no: int) -> None:
     st.markdown(f"- 解釈: {content['interpretation']}")
     st.markdown(f"- 仮説: {content['hypothesis']}")
 
-    if step_no == 10:
-        st.subheader("報告見本（12項目）")
-        for i, line in enumerate(content["report_sample"], start=1):
-            st.markdown(f"{i}. {line}")
-        st.subheader("チェックリスト")
-        for item in content["checklist"]:
-            st.markdown(f"- {item}")
-
 
 def format_output(_unused: None = None) -> None:
     """このモジュールは描画専用のため整形出力はない。"""
-    return None
